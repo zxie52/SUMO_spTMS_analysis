@@ -3,7 +3,8 @@ close all;
 
 %% Start the Journey
 
-%% Start the Journey
+% this code using all correct trials instead of supertrials(average 3 trials into 1) on all trials
+% for the supertrials usage, please go to the directory: ./old_results_beforeCNS2022
 
 % We have finished the preprocessing
 
@@ -32,8 +33,11 @@ fpath13 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/IEM_results_beta_tm
 
 %%% Warning: due to the warning from iem function("Warning: rank deficient, rank = 6") on SUMO 3001
 %%% and SUMO 3017, we have to skip those two subjects first.
+%%% Warning: exclude the SUMO 120 because there is no enough corret trials in bin2 for left AMI
+%%% switch condition
+
 subject = {'SUMO_0102', 'SUMO_0104', 'SUMO_0105', 'SUMO_0106',  ...
-           'SUMO_0108', 'SUMO_0111', 'SUMO_0114', 'SUMO_0120', 'SUMO_3015' };
+           'SUMO_0108', 'SUMO_0111', 'SUMO_0114', 'SUMO_3015' };
 % , 'SUMO_3001', 'SUMO_3017'     
 type = {'stim', 'cue1', 'tms1', 'probe1', 'cue2', 'tms2', 'probe2'};
 
@@ -60,10 +64,13 @@ for l = 1:length(subject)
         binedges = linspace(1,181,nbins+1);
         bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
         
+        % filter only correct trials in the probe2
+        q = p((p.response2 == 1), :);
+
         [left_bin_AMI_stay, left_bin_AMI_switch, ...
          left_bin_UMI_stay, left_bin_UMI_switch, ...
          right_bin_AMI_stay, right_bin_AMI_switch, ...
-         right_bin_UMI_stay, right_bin_UMI_switch] = filter_bins_for_iem_tms2(p, binedges);
+         right_bin_UMI_stay, right_bin_UMI_switch] = filter_bins_for_iem_tms2(q, binedges);
         
         %% IEM
         
@@ -93,8 +100,14 @@ for l = 1:length(subject)
 
         %% Running IEM
         for i = 1 : length(groups) % notice that we used the parallel envi in permutation            
-            %Supertrials for stimuli in the for loop(AMI + UMI)
-            [super_charge, stimlabels, h] = supertrial_3trial(groups{i}, beta_power);
+            % have the EEG data and stimlabels for the iem function
+            % the output h: epoch# * stimlabels
+            h = nonzeros(groups{i});
+            [~, colIdcs] = find(groups{i} ~= 0);
+            h(:,2) = bincent(colIdcs);
+            
+            stimlabels = h(:,2);
+            super_charge = beta_power(:,:,h(:,1));
             
             % for all posterior electrodes
             % impchan = [23,53,22,54,21,51,19,50,20,48,49,18,10,41,11,42,12,15,44,14,43,45,46,16];
@@ -112,7 +125,6 @@ for l = 1:length(subject)
                     impchan = find(ismember({EEG.chanlocs.labels}, ROI)); %channels in L hem
             end
             
-            
             % IEM part
             [chanresp, ~, dstimes] = iemori(super_charge(impchan,:,:),stimlabels,4,EEG.times);
             
@@ -121,7 +133,7 @@ for l = 1:length(subject)
             nperm = 100;
             parfor p = 1:nperm
                 disp(p)
-                [tmp, ~, dstimes] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times);
+                [tmp, ~, ~] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times);
                 %the 4,EEG.times is the vector of times with a downsampling factor of 4
                 chanresp_perm(:,:,p) = mean(tmp,3);
             end
@@ -143,7 +155,7 @@ for l = 1:length(subject)
                 
                 % checking if the subject miss the #3 channel in EEG.data
                 % for subjects who do not have the 3rd channel, we copy the 5th channel to the 3rd
-                if h(1,1,3) == 0
+                if isempty(find(h(:,2) == bincent(3),1))
                     % we made changes on this part from Morgan's original code
                     chanrespsL(1,3,:) = avgacrosstrials(4,:);
                     chanrespsL(1,1:2,:) = avgacrosstrials(1:2,:);
@@ -189,7 +201,7 @@ for l = 1:length(subject)
                 avgacrosstrials = mean(chanresp,3); %create a variable that is now 2D
                 avgacrosstrials_perm = mean(chanresp_perm,3); %create a variable that is now 2D
                 
-                if h(1,1,3) == 0 % Should it be 3rd-5th bin shift rather than 1st-6th bin?
+                if isempty(find(h(:,2) == bincent(3),1)) % Should it be 3rd-5th bin shift rather than 1st-6th bin?
                     chanrespsR(1,3,:) = avgacrosstrials(4,:);
                     chanrespsR(1,1:2,:) = avgacrosstrials(1:2,:);
                     chanrespsR(1,4:7,:) = avgacrosstrials(3:6,:);
@@ -482,3 +494,7 @@ for i = 1 : length(group_name)
         saveas(gcf, strcat('All_Subjects_iem_', group_name{i},'_heatmap.png'));
     end
 end
+
+% finished
+load handel;
+sound(y, Fs);

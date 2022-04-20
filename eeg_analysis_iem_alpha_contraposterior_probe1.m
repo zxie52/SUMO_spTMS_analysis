@@ -3,6 +3,9 @@ clear;
 
 %% Start the Journey
 
+% this code using all correct trials instead of supertrials(average 3 trials into 1) on all trials
+% for the supertrials usage, please go to the directory: ./old_results_beforeCNS2022
+
 % This script requires EEGLAB v2020.0 in MATLAB
 
 % The flow for this part:
@@ -86,11 +89,14 @@ for l = 1:length(subject)
         nbins = 7;
         binedges = round(linspace(1,181,nbins+1));
         bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
+        
+        % filter only correct trials in the probe1
+        q = p((p.response == 1), :);
+
         [leftTrial, leftStimlabels, rightTrial, rightStimlabels] = filter_bins_for_iem_probe(condition, type{t}, p, binedges, bincent);
         
         %% Step 4: IEM
         groups = {leftTrial, rightTrial};
-        labels = {leftStimlabels, rightStimlabels};
         
         %% Extra Step: run the FFT on EEG data and subtract the pre-stimulus baseline
         pow_base = [];
@@ -111,14 +117,21 @@ for l = 1:length(subject)
         % Average the 6 frequencies into one
         alpha_power = squeeze(mean(tmp,2));   
 
-        %% Running the IEM on the probe/ using supertrials(averaging three trials)
+        %% Running the IEM on the probe
         for i = 1 : length(group_name) % notice that we used the parallel envi in permutation
             chanrespsL = [];
             chanrespsR = [];
             chanresp_permsL = [];
             chanresp_permsR = [];
-            %Supertrials for two different conditions (probe + UMI)
-            [super_charge, stimlabels, h] = supertrial_3trial(groups{i}, alpha_power);
+            
+            % have the EEG data and stimlabels for the iem function
+            % the output h: epoch# * stimlabels
+            h = nonzeros(groups{i});
+            [~, colIdcs] = find(groups{i} ~= 0);
+            h(:,2) = bincent(colIdcs);
+            
+            stimlabels = h(:,2);
+            super_charge = alpha_power(:,:,h(:,1));
 
             nbins = 7;
             binedges = linspace(1,181,nbins+1);
@@ -151,7 +164,7 @@ for l = 1:length(subject)
             nperm = 100;
             parfor p = 1:nperm
                 disp(p)
-                [tmp, ~, dstimes] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times); 
+                [tmp, ~, ~] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times); 
                 %the 4,EEG.times is the vector of times with a downsampling factor of 4
                 chanresp_perm(:,:,p) = mean(tmp,3);
             end
@@ -170,7 +183,7 @@ for l = 1:length(subject)
             
                 % checking if the subject miss the #3 channel in EEG.data
                 % for subjects who do not have the 3rd channel, we copy the 5th channel to the 3rd
-                if h(1,1,3) == 0 
+                if isempty(find(h(:,2) == bincent(3),1)) 
                     chanrespsL(1,3,:) = avgacrosstrials(4,:);
                     chanrespsL(1,1:2,:) = avgacrosstrials(1:2,:);
                     chanrespsL(1,4:7,:) = avgacrosstrials(3:6,:);
@@ -215,7 +228,7 @@ for l = 1:length(subject)
             
                 % checking if the subject miss the #3 channel in EEG.data
                 % for subjects who do not have the 3rd channel, we copy the 5th channel to the 3rd
-                if h(1,1,3) == 0 
+                if isempty(find(h(:,2) == bincent(3),1)) 
                     chanrespsR(1,3,:) = avgacrosstrials(4,:);
                     chanrespsR(1,1:2,:) = avgacrosstrials(1:2,:);
                     chanrespsR(1,4:7,:) = avgacrosstrials(3:6,:);
@@ -490,4 +503,7 @@ for k =  1 : 2
         saveas(gcf, 'allsubjects_iem_right_probe_heatmap.png');
     end
 end
+
 % finished
+load handel;
+sound(y, Fs);

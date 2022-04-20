@@ -141,7 +141,7 @@ for l = 1:length(subject)
             nperm = 100;
             parfor p = 1:nperm
                 disp(p)
-                [tmp, ~, dstimes] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times); 
+                [tmp, ~, ~] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times); 
                 %the 4,EEG.times is the vector of times with a downsampling factor of 4
                 chanresp_perm(:,:,p) = mean(tmp,3);
             end
@@ -480,4 +480,7 @@ for k =  1 : 2
         saveas(gcf, 'allsubjects_iem_right_probe_heatmap.png');
     end
 end
+
 % finished
+load handel;
+sound(y, Fs);

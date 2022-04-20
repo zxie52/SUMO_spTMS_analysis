@@ -3,6 +3,9 @@ clear;
 
 %% Start the Journey
 
+% this code using all correct trials instead of supertrials(average 3 trials into 1) on all trials
+% for the supertrials usage, please go to the directory: ./old_results_beforeCNS2022
+
 % We have finished the preprocessing
 
 % In this part, I will run the iem on voltage in cue1 through processed data
@@ -49,7 +52,6 @@ for l = 1:length(subject)
         EEG.event(strcmp({EEG.event.type}, 'S 50')) = [];
             
         p = struct2table(EEG.event); % change the EEG.event to a cell array and then categorize into different bins
-        q = table2cell(p);
         
         %% Step 2: filter trials into four groups: left_AMI, left_UMI, right_AMI, right_UMI
         %get the event trial number; trial location1; target orientation; epoch#; left orientation(stimulus); right orientaion(stimulus); 
@@ -61,6 +63,9 @@ for l = 1:length(subject)
         binedges = linspace(1,181,nbins+1);
         % calculate the center of each bin
         bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
+        
+        % filter only correct trials in the probe1
+        q = p((p.response == 1), :);
         
         %Filter trials into left and right group
         [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI] = filter_bins_for_iem_tms(p, binedges, bincent);
@@ -93,12 +98,15 @@ for l = 1:length(subject)
             chanresp_permsL = [];
             chanresp_permsR = [];
             
-            %% Supertrials for four different stimuli (AMI + UMI)
-            [super_charge, stimlabels, h] = supertrial_3trial(groups{i}, alpha_power);
- 
-            nbins = 7;
-            binedges = linspace(1,181,nbins+1);
-            bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
+            %% Trials for four different stimuli (AMI + UMI)            
+            % have the EEG data and stimlabels for the iem function
+            % the output h: epoch# * stimlabels
+            h = nonzeros(groups{i});
+            [~, colIdcs] = find(groups{i} ~= 0);
+            h(:,2) = bincent(colIdcs);
+            
+            stimlabels = h(:,2);
+            super_charge = alpha_power(:,:,h(:,1));
 
             clear chanresp & weights & dstimes & chanresp_perm;
 
@@ -127,7 +135,7 @@ for l = 1:length(subject)
             nperm = 100;
             parfor p = 1:nperm
                 disp(p)
-                [tmp, ~, dstimes] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times); 
+                [tmp, ~, ~] = iemori(super_charge(impchan,:,:),stimlabels(randperm(length(stimlabels))),4,EEG.times); 
                 %the 4,EEG.times is the vector of times with a downsampling factor of 4
                 chanresp_perm(:,:,p) = mean(tmp,3);
             end
@@ -146,7 +154,7 @@ for l = 1:length(subject)
             
                 % checking if the subject miss the #3 channel in EEG.data
                 % for subjects who do not have the 3rd channel, we copy the 5th channel to the 3rd
-                if h(1,1,3) == 0 
+                if isempty(find(h(:,2) == bincent(3),1)) 
                     chanrespsL(1,3,:) = avgacrosstrials(4,:);
                     chanrespsL(1,1:2,:) = avgacrosstrials(1:2,:);
                     chanrespsL(1,4:7,:) = avgacrosstrials(3:6,:);
@@ -192,7 +200,7 @@ for l = 1:length(subject)
             
                 % checking if the subject miss the #3 channel in EEG.data
                 % for subjects who do not have the 3rd channel, we copy the 5th channel to the 3rd
-                if h(1,1,3) == 0 
+                if isempty(find(h(:,2) == bincent(3),1)) 
                     chanrespsR(1,3,:) = avgacrosstrials(4,:);
                     chanrespsR(1,1:2,:) = avgacrosstrials(1:2,:);
                     chanrespsR(1,4:7,:) = avgacrosstrials(3:6,:);
@@ -702,5 +710,6 @@ for k =  1 : 2
     end
 end
 
-%finished
-
+% finished
+load handel;
+sound(y, Fs);
