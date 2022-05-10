@@ -68,7 +68,7 @@ for l = 1:length(subject)
         q = p((p.response == 1), :);
         
         %Filter trials into left and right group
-        [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI] = filter_bins_for_iem_tms(p, binedges, bincent);
+        [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI] = filter_bins_for_iem_tms(q, binedges, bincent);
         
         %% Step 3: IEM
         groups = {left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI};
@@ -107,7 +107,7 @@ for l = 1:length(subject)
             h(:,2) = bincent(colIdcs);
             
             stimlabels = h(:,2);
-            super_charge = alpha_power(:,:,h(:,1));
+            super_charge = beta_power(:,:,h(:,1));
 
             clear chanresp & weights & dstimes & chanresp_perm;
       

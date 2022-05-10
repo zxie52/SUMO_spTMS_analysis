@@ -93,7 +93,7 @@ for l = 1:length(subject)
         % filter only correct trials in the probe1
         q = p((p.response == 1), :);
 
-        [leftTrial, leftStimlabels, rightTrial, rightStimlabels] = filter_bins_for_iem_probe(condition, type{t}, p, binedges, bincent);
+        [leftTrial, leftStimlabels, rightTrial, rightStimlabels] = filter_bins_for_iem_probe(condition, type{t}, q, binedges, bincent);
         
         %% Step 4: IEM
         groups = {leftTrial, rightTrial};

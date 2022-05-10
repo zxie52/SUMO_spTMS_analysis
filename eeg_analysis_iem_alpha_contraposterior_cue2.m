@@ -67,7 +67,7 @@ for l = 1:length(subject)
         binedges = round(linspace(1,181,nbins+1));
         bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
         
-        [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI]  = filter_bins_for_iem_cue(type{t}, p, binedges, bincent);
+        [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI]  = filter_bins_for_iem_cue(type{t}, q, binedges, bincent);
         
         %% Step 4: IEM
         groups = {left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI};

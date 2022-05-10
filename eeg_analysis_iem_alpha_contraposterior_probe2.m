@@ -95,7 +95,7 @@ for l = 1:length(subject)
         nbins = 7;
         binedges = round(linspace(1,181,nbins+1));
         bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
-        [leftTrial, leftStimlabels, rightTrial, rightStimlabels] = filter_bins_for_iem_probe(condition, type{t}, p, binedges, bincent);
+        [leftTrial, leftStimlabels, rightTrial, rightStimlabels] = filter_bins_for_iem_probe(condition, type{t}, q, binedges, bincent);
         
         %% Step 4: IEM
         groups = {leftTrial, rightTrial};

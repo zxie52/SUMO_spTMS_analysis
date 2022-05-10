@@ -67,7 +67,7 @@ for l = 1:length(subject)
         % filter only correct trials in the probe1
         q = p((p.response == 1), :);
         
-        [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI]  = filter_bins_for_iem_cue(type{t}, p, binedges, bincent);
+        [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI]  = filter_bins_for_iem_cue(type{t}, q, binedges, bincent);
         
         %% Step 4: IEM
         groups = {left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI};
