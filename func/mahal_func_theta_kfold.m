@@ -1,4 +1,4 @@
-function  [distance_cos,distances] = mahal_func_theta_kfold_b(data,theta,n_folds)
+function  [distance_cos,distances] = mahal_func_theta_kfold(data,theta,n_folds)
 
 %% input
 
@@ -39,7 +39,6 @@ for tst=1:n_folds % run for each fold
     m=double(nan(length(unique(u_theta)),size(data,2),size(data,3)));
     % original: n_conds = [u_theta',histc(trn_theta,u_theta)']; -> z.x
     n_conds = [u_theta,histc(trn_theta,u_theta)];
-%     n_conds2 = [u_theta',histcounts(trn_theta,u_theta)];
 
     for c=1:length(u_theta)
         temp1=trn_dat(trn_theta==u_theta(c),:,:);

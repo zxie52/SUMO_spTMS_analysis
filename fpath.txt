@@ -1,0 +1,7 @@
+fpath1: directory for raw EEG data
+fpath2: directory for beh data for merging
+fpath3: directory for eeg data before preprocessing
+fpath4: directory for saving the eeg set before 1st round of ICA
+fpath7: directory for saving the eeg set before 2nd round of ICA
+fpath8: directory for saving the eeg set after preprocessing, before formal analysis
+
