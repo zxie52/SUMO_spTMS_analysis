@@ -11,7 +11,7 @@ bincent = round(mean([binedges(1:end-1);binedges(2:end)]));
 % filter only correct trials in the probe1
 q = p((p.response == 1), :);
 
-%Filter trials into left and right group
+%Filter trials into left and right group(tms1)
 [left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI] = filter_bins_for_iem_tms(q, binedges, bincent);
 
 %% Step 2: Preprocess data befor calculating Mahalanobis Distance
@@ -38,3 +38,59 @@ n_folds = 5;
 
 % Wolff, 2017
 %[cos_amp, d_tune] = mahalTune_func(data,theta,deg2rad(bincent*2),2*pi/7);
+
+%% Plotting
+figure;
+hold on;
+ylim([-0.02, 0.02]);
+scatter(EEG.times, squeeze(mean(distance_cos,1)), 'filled');
+plot(EEG.times, squeeze(mean(distance_cos,1)));
+
+figure;
+hold on;
+ylim([-0.02, 0.02]);
+scatter(downsample(EEG.times, 4), downsample(squeeze(mean(distance_cos,1)), 4));
+
+figure;
+hold on;
+ylim([-0.02, 0.02]);
+scatter(downsample(EEG.times, 4), smoothdata(downsample(squeeze(mean(distance_cos,1)), 4), 'gaussian', 12));
+
+title("Cosine Weighted Average of Mahalanobis Distances across timepoints on Probe1(right AMI)(testorient)", 'Fontsize', 20);
+
+% % figure;
+% % imagesc(EEG.times, bincent, squeeze(mean(distances, 2)));
+% % set(gca, 'YDir', 'normal');
+% 
+% A = squeeze(mean(distances,2));
+% 
+% figure;
+% for i = 1:size(A,1)
+%     hold on;
+%     scatter(EEG.times, A(i,:), [], rand(1,3), 'filled');
+% end
+% 
+% figure;
+% imagesc(EEG.times, bincent, A);
+% set(gca, 'YDir', 'normal');
+% 
+% % orioffset = [1:7];
+% % contourf(EEG.times, orioffset, squeeze(mean(distances, 1)),30,'linec','none');
+% for i = 1 : size(A,1)
+%     B(i,:) = smoothdata(A(i,:), 'gaussian', 12);
+% end
+% figure;
+% for i = 1:size(B,1)
+%     hold on;
+%     scatter(EEG.times, B(i,:), [], rand(1,3), 'filled');
+% end
+% figure;
+% for i = 1:size(B,1)
+%     hold on;
+%     plot(EEG.times, B(i,:), 'Color', rand(1,3));
+% end
+% 
+% 
+% figure;
+% imagesc(EEG.times, bincent, B);
+% set(gca, 'YDir', 'normal');
