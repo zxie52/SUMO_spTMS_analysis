@@ -73,7 +73,7 @@ end
 distances=-bsxfun(@minus,distances,mean(distances,1)); % mean-centre distances for prettier visuals
 end
 
-%%%%% Helper function
+
 function sigma=covdiag(x)
 
     % x (t*n): t iid observations on n random variables
