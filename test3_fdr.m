@@ -38,10 +38,10 @@ scatter(dstimes, p, 'filled');
 figure;
 fdr2 = mafdr(p, 'BHFDR', true);
 hold on;
-xlim([dstimes(1), dstimes(end)]);
+xlim([EEG.times(1), EEG.times(end)]);
 ylim([0 1]);
 yline(.05, 'lineWidth', 4);
-scatter(dstimes, fdr2, 'filled');
+scatter(EEG.times, fdr2, 'filled');
 % 
 % figure;
 % fdr2 = mafdr(p, 'BHFDR', true, 'showplot', true);

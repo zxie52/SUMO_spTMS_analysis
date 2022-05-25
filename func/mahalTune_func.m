@@ -27,6 +27,7 @@ d_tune=nan(size(data,1),length(angspace),size(data,3));
 cos_amp=nan(size(data,1),size(data,3));
 trl_ind=1:size(data,1);
 reverseStr=''; %this is simply to present the percentage completed
+data = single(data);
 for trl=1:size(data,1)
     trn_dat = data(setdiff(trl_ind,trl),:,:);
     trn_angle = theta(setdiff(trl_ind,trl));
@@ -43,7 +44,7 @@ for trl=1:size(data,1)
             % the covariance matrix is computed for each time-point and excluding the test-trial
             sigma = covdiag(trn_dat(:,:,ti)); % here covariance is estimated using shrinkage (see below from Ledoit & Wolf, 2004).
             % calculates the distances between the trial and all angle bins
-            d_tune(trl,:,ti) = pdist2(squeeze(m(:,:,ti)), squeeze(data(trl,:,ti)),'mahalanobis',sigma);
+            d_tune(trl,:,ti) = pdist2(squeeze(m(:,:,ti)), squeeze(single(data(trl,:,ti))),'mahalanobis',sigma);
             % convolve cosine of angspace with the tuning curve.
             % Since the decoding tuning curve should resemble a reversed cosine (higher distance=higher value), the value is reversed for ease of interpretation, so that high=high decoding
             cos_amp(trl,ti)=-(mean(cos(angspace).*squeeze(d_tune(trl,:,ti))'));

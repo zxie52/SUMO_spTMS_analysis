@@ -46,7 +46,7 @@ for i = 1 : size(chanrespsR_allsub, 1) % # of subjects
 end
 
 % for IEM channel response 
-for f = 1:size(chanrespsR_allsub, 1)
+for f = 1:size(chanrespsL_allsub, 1)
 
     r = squeeze(cond1(f,:,:)); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
     centerind = 4; %MLW: center of 6 bins is technically 3
