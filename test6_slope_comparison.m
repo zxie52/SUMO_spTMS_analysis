@@ -9,127 +9,75 @@ subject = {'SUMO_0102', 'SUMO_0104', 'SUMO_0105', 'SUMO_0106',  ...
 group_name = {'left AMI', 'left UMI', 'right AMI', 'right UMI'};
 
 for i = 1 : 2 % two comparisons in cue1, voltage
-    switch i
-        case 1 % for comparing left AMI and right UMI
-            for l = 1 : length(subject)
+    for l = 1 : length(subject)
+        switch i
+            case 1 % for comparing left AMI and right UMI
                 load(strcat('IEM_Exp1_contraposterior', 'SUMO_', subject{l}, '_epoch1_left AMI.mat'));
                 load(strcat('IEM_Exp1_contraposterior', 'SUMO_', subject{l}, '_epoch1_right UMI.mat'));
-                % for IEM channel response 
-                r = squeeze(chanrespsL); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
-                centerind = 4; %MLW: center of 6 bins is technically 3
-
-                %loop over timepoints and fit the slope ('selectivity') of the iem at each timepoint
-                for t = 1:size(r,2) 
-
-                    %average the data over equidistant channels
-                    % why flip the array? -z.x
-                    avgdat = mean([r(:,t),flipud(r(:,t))],2);
-                    % why only pick the first half of the channels(from 1 to the center)? -z.x
-                    avgdat = avgdat(1:centerind);
-
-                    %fit a linear model and extract slope and save for each timepoint
-                    m = polyfit(1:centerind, avgdat', 1);
-                    slope1(t) = m(1); 
-                end
-
-                % calculate the mean across all subjects
-                slope3 = smoothdata(slope1, 'gaussian', 16);
-
-                figure; plot(dstimes, slope3);
-                xlim([dstimes(1), dstimes(end)]);
-                ylim([-1, 1]);
-                xlabel('time from stimulus onset');
-                ylabel('slope');
-                xlim([dstimes(1) dstimes(end)]);
-
-                % for permuation
-                %%
-                r = squeeze(chanrespsR); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
-                centerind = 4; %MLW: center of 6 bins is technically 3
-
-                %loop over timepoints and fit the slope ('selectivity') of the iem at each timepoint
-                for t = 1:size(r,2) 
-
-                    %average the data over equidistant channels
-                    % why flip the array? -z.x
-                    avgdat = mean([r(:,t),flipud(r(:,t))],2);
-                    % why only pick the first half of the channels(from 1 to the center)? -z.x
-                    avgdat = avgdat(1:centerind);
-
-                    %fit a linear model and extract slope and save for each timepoint
-                    m = polyfit(1:centerind, avgdat', 1);
-                    slope2(t) = m(1); 
-                end
-
-                slope4 = smoothdata(slope2, 'gaussian', 16);
-                % calculate the mean across all subjects
-            %     hold on;
-            %     plot(dstimes, slope4);
-            %     hold off;
-
-                a(1,l) = corr(slope1', slope2');
-            end
-        case 2 % for comparing right AMI and left UMI
-            for l = 1 : length(subject)
+            case 2 % for comparing right AMI and left UMI
                 load(strcat('IEM_Exp1_contraposterior', 'SUMO_', subject{l}, '_epoch1_left UMI.mat'));
                 load(strcat('IEM_Exp1_contraposterior', 'SUMO_', subject{l}, '_epoch1_right AMI.mat'));
-                % for IEM channel response 
-                r = squeeze(chanrespsL); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
-                centerind = 4; %MLW: center of 6 bins is technically 3
+            otherwise
+                error("there should be only two types of comparisons")
+        end
+        % for IEM channel response 
+        r = squeeze(chanrespsL); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
+        centerind = 4; %MLW: center of 6 bins is technically 3
 
-                %loop over timepoints and fit the slope ('selectivity') of the iem at each timepoint
-                for t = 1:size(r,2) 
+        %loop over timepoints and fit the slope ('selectivity') of the iem at each timepoint
+        for t = 1:size(r,2) 
 
-                    %average the data over equidistant channels
-                    % why flip the array? -z.x
-                    avgdat = mean([r(:,t),flipud(r(:,t))],2);
-                    % why only pick the first half of the channels(from 1 to the center)? -z.x
-                    avgdat = avgdat(1:centerind);
+            %average the data over equidistant channels
+            % why flip the array? -z.x
+            avgdat = mean([r(:,t),flipud(r(:,t))],2);
+            % why only pick the first half of the channels(from 1 to the center)? -z.x
+            avgdat = avgdat(1:centerind);
 
-                    %fit a linear model and extract slope and save for each timepoint
-                    m = polyfit(1:centerind, avgdat', 1);
-                    slope1(t) = m(1); 
-                end
+            %fit a linear model and extract slope and save for each timepoint
+            m = polyfit(1:centerind, avgdat', 1);
+            slope1(t) = m(1); 
+        end
 
-                % calculate the mean across all subjects
-                slope3 = smoothdata(slope1, 'gaussian', 16);
+        % calculate the mean across all subjects
+        slope3 = smoothdata(slope1, 'gaussian', 16);
 
-            %     figure; plot(dstimes, slope3);
-            %     xlim([dstimes(1), dstimes(end)]);
-            %     ylim([-1, 1]);
-            %     xlabel('time from stimulus onset');
-            %     ylabel('slope');
-            %     xlim([dstimes(1) dstimes(end)]);
+        figure; plot(dstimes, slope3);
+        xlim([dstimes(1), dstimes(end)]);
+        ylim([-1, 1]);
+        xlabel('time from stimulus onset');
+        ylabel('slope');
+        xlim([dstimes(1) dstimes(end)]);
 
-                % for permuation
-                %%
-                r = squeeze(chanrespsR); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
-                centerind = 4; %MLW: center of 6 bins is technically 3
+        % for permuation
+        %%
+        r = squeeze(chanrespsR); %MLW: 6 orientation bins over 188 time points (average over 1D = subjects)
+        centerind = 4; %MLW: center of 6 bins is technically 3
 
-                %loop over timepoints and fit the slope ('selectivity') of the iem at each timepoint
-                for t = 1:size(r,2) 
+        %loop over timepoints and fit the slope ('selectivity') of the iem at each timepoint
+        for t = 1:size(r,2) 
 
-                    %average the data over equidistant channels
-                    % why flip the array? -z.x
-                    avgdat = mean([r(:,t),flipud(r(:,t))],2);
-                    % why only pick the first half of the channels(from 1 to the center)? -z.x
-                    avgdat = avgdat(1:centerind);
+            %average the data over equidistant channels
+            % why flip the array? -z.x
+            avgdat = mean([r(:,t),flipud(r(:,t))],2);
+            % why only pick the first half of the channels(from 1 to the center)? -z.x
+            avgdat = avgdat(1:centerind);
 
-                    %fit a linear model and extract slope and save for each timepoint
-                    m = polyfit(1:centerind, avgdat', 1);
-                    slope2(t) = m(1); 
-                end
+            %fit a linear model and extract slope and save for each timepoint
+            m = polyfit(1:centerind, avgdat', 1);
+            slope2(t) = m(1); 
+        end
 
-                slope4 = smoothdata(slope2, 'gaussian', 16);
-                % calculate the mean across all subjects
-                hold on;
-                plot(dstimes, slope4);
-                hold off;
-
+        slope4 = smoothdata(slope2, 'gaussian', 16);
+        % calculate the mean across all subjects
+    %     hold on;
+    %     plot(dstimes, slope4);
+    %     hold off;
+        switch i
+            case 1
+                a(1,l) = corr(slope1', slope2');
+            case 2
                 a(2,l) = corr(slope1', slope2');
-            end
-        otherwise
-            error("there should be only two types of comparisons")
+        end
     end
 end
 
