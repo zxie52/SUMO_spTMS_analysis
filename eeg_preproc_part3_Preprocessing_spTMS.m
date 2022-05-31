@@ -73,7 +73,7 @@ while ~strcmp(type, {'tms1', 'tms2'})
     type  = input("What type of condition do you want to preprocess? tms1 or tms2 \n", 's');
 end
 %% Saving baseline for later tesa
-for l = 1% : length(subject)
+for l = 1 : length(subject)
     %% Step 1: Load eeg files which were epoched around TMS 1
     cd(fpath3);
     EEG = pop_loadset('filename', strcat(subject{l}, '_after_epoch_', type, '.set'), 'filepath', fpath3);

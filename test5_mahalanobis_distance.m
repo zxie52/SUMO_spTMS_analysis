@@ -13,7 +13,7 @@ type = {'stim', 'cue1', 'tms1', 'probe1', 'cue2', 'tms2', 'probe2'};
 group_name = {'left AMI', 'left UMI', 'right AMI', 'right UMI'};
 
 
-for l = 6:length(subject)
+for l = 1:length(subject)
     for t = 3 % This time we only preprocess the Probe1 data
         %% Step 1: filter trials into four groups: left_AMI, left_UMI, right_AMI, right_UMI
         cd(fpath8);
@@ -58,12 +58,11 @@ for l = 6:length(subject)
                     impchan = find(ismember({EEG.chanlocs.labels}, ROI)); %channels in L hem
             end
             
-            stimlabels = h(:,2);
             super_charge = EEG.data(impchan,:,h(:,1));
 
             %% Calculate the Mahalanobis Distance
             data = single(permute(super_charge, [3 1 2]));
-            theta = wrapToPi(deg2rad(stimlabels * 2));
+            theta = mapfun(h(:,2), 0, 180, -pi, pi);
             n_folds = 4;
 
             % Ester
