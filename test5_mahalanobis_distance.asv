@@ -33,6 +33,25 @@ for l = 1:length(subject)
 
         %% Step 2: Preprocess data befor calculating Mahalanobis Distance
         groups = {left_bin_AMI, left_bin_UMI, right_bin_AMI, right_bin_UMI};
+        pow_base = [];
+
+        % Run the dothewave function to have pow matrix
+        % We can change from [2 50] to [8 13](alpha power)
+        % This time we pick the pre-TMS interval as baseline for FFT 
+        [pow, ~, ~, dstimes, freqs] = dothewave(EEG.data, 1000, [8 13], 6, 4, 1, [], EEG.times);
+  
+
+        %% Extra Step: remove the pre_stim baseline
+        % Load the baseline from pre-stimulus period
+        cd(fpath8);
+        load(strcat('Pre_stimulus_power_baseline', subject{l}, '.mat'))
+        tmp = [];
+
+        % Only Pick the alpha frequencies(first 6 frequency band)
+        tmp = 100 * bsxfun(@rdivide, bsxfun(@minus, pow, pow_base), pow_base);
+
+        % Average the 6 frequencies into one
+        alpha_power = squeeze(mean(tmp,2));   
         for i = 1 : length(groups)
             % have the EEG data and stimlabels for the iem function
             % the output h: epoch# * stimlabels, only the right trials this time
@@ -59,7 +78,7 @@ for l = 1:length(subject)
             end
             
             stimlabels = circ_ang2rad(h(:,2));
-            super_charge = EEG.data(impchan,:,h(:,1));
+            super_charge = alpha_power(impchan,:,h(:,1));
 
             %% Calculate the Mahalanobis Distance
 %             eeg_data = single(permute(super_charge, [3 1 2]));
@@ -217,10 +236,10 @@ distance_cos_group_ave = squeeze(mean(distance_cos_group, 1))';
 distance_cos_group_err = squeeze(std(distance_cos_group,1) / sqrt(size(distance_cos_group,1)))';
 
 % smooth the data with Gaussian Filter time windowed in 16ms
-for i = 1:size(distance_cos_group_ave)
-    distance_cos_group_ave_smoothed(i,:) = smoothdata(distance_cos_group_ave(i,:), 'gaussian', 16);
-    distance_cos_group_err_smoothed(i,:) = smoothdata(distance_cos_group_err(i,:), 'gaussian', 16);
-end
+% for i = 1:size(distance_cos_group_ave)
+%     distance_cos_group_ave_smoothed(i,:) = smoothdata(distance_cos_group_ave(i,:), 'gaussian', 16);
+%     distance_cos_group_err_smoothed(i,:) = smoothdata(distance_cos_group_err(i,:), 'gaussian', 16);
+% end
 % group_name = {'left AMI', 'left UMI', 'right AMI', 'right UMI'};
 % plot the decoding results in the same figure
 figure;
@@ -246,11 +265,11 @@ textFontSize = 16;
 % t.FontWeight = 'bold';
 % t.HorizontalAlignment = 'center';
 % plot the left stimulus
-p1 = plot(EEG.times, distance_cos_group_ave_smoothed(1,:), 'lineWidth', 3, 'Color', 'r');
-shadedError(EEG.times, distance_cos_group_ave_smoothed(1,:), distance_cos_group_err_smoothed(1,:), 'r');
+p1 = plot(EEG.times, distance_cos_group_ave(1,:), 'lineWidth', 3, 'Color', 'r');
+shadedError(EEG.times, distance_cos_group_ave(1,:), distance_cos_group_err(1,:), 'r');
 % plot the right stimulus
-p3 = plot(EEG.times, distance_cos_group_ave_smoothed(2,:), 'lineWidth', 3, 'Color', 'b');
-shadedError(EEG.times, distance_cos_group_ave_smoothed(2,:), distance_cos_group_err_smoothed(2,:), 'b');
+p3 = plot(EEG.times, distance_cos_group_ave(2,:), 'lineWidth', 3, 'Color', 'b');
+shadedError(EEG.times, distance_cos_group_ave(2,:), distance_cos_group_err(2,:), 'b');
 
 % add the legend
 legend([p1, p3], group_name);
