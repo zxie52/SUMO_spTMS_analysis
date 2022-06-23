@@ -40,7 +40,7 @@ for l = 1:length(subject)
             h = nonzeros(groups{i});
             [~, colIdcs] = find(groups{i} ~= 0);
             h(:,2) = bincent(colIdcs);
-            h(h(:,1)>size(EEG.data, 3)/2, 2) = h(h(:,1)>size(EEG.data, 3)/2, 2) - 180;
+%             h(h(:,1)>size(EEG.data, 3)/2, 2) = h(h(:,1)>size(EEG.data, 3)/2, 2) - 180;
             % sort the h to have the ordered stimlabels
             h = sortrows(h);
 
@@ -66,12 +66,9 @@ for l = 1:length(subject)
 %             data = [eeg_data; eeg_data];
 %             theta = [stimlabels; stimlabels-pi];
             
-%             order = randperm(size(data, 1));
-%             theta_test = theta(order);
-%             data_test = data(order, :, :);
             data = single(permute(super_charge, [3 1 2]));
             theta = circ_ang2rad(h(:,2));
-            n_folds = 2;
+            n_folds = 4;
 
             % Ester
             [distance_cos,distances] = mahal_func_theta_kfold(data,theta,n_folds);
@@ -107,7 +104,7 @@ axisFontSize = 20;
 textFontSize = 16;
 
 % % Add the line at TMS impulse
-% ylim([-0.08, 0.08]);
+% ylim([-0.02, 0.05]);
 % y = ylim;
 % p = plot([0 0], [y(1) y(2)]);
 % p.Color = 'black';
@@ -217,10 +214,10 @@ distance_cos_group_ave = squeeze(mean(distance_cos_group, 1))';
 distance_cos_group_err = squeeze(std(distance_cos_group,1) / sqrt(size(distance_cos_group,1)))';
 
 % smooth the data with Gaussian Filter time windowed in 16ms
-for i = 1:size(distance_cos_group_ave)
-    distance_cos_group_ave_smoothed(i,:) = smoothdata(distance_cos_group_ave(i,:), 'gaussian', 16);
-    distance_cos_group_err_smoothed(i,:) = smoothdata(distance_cos_group_err(i,:), 'gaussian', 16);
-end
+% for i = 1:size(distance_cos_group_ave)
+%     distance_cos_group_ave_smoothed(i,:) = smoothdata(distance_cos_group_ave(i,:), 'gaussian', 16);
+%     distance_cos_group_err_smoothed(i,:) = smoothdata(distance_cos_group_err(i,:), 'gaussian', 16);
+% end
 % group_name = {'left AMI', 'left UMI', 'right AMI', 'right UMI'};
 % plot the decoding results in the same figure
 figure;
@@ -235,22 +232,22 @@ titleFontSize = 28;
 axisFontSize = 20;
 textFontSize = 16;
 
-% % Add the line at TMS impulse
-% ylim([-0.08, 0.08]);
-% y = ylim;
-% p = plot([0 0], [y(1) y(2)]);
-% p.Color = 'black';
-% p.LineWidth = 2;
-% % Add mark onto the TMS trigger line
-% t = text(0, y(1)-.005, 'stimulus', 'Fontsize', textFontSize);
-% t.FontWeight = 'bold';
-% t.HorizontalAlignment = 'center';
+% Add the line at TMS impulse
+ylim([-0.02, 0.05]);
+y = ylim;
+p = plot([0 0], [y(1) y(2)]);
+p.Color = 'black';
+p.LineWidth = 2;
+% Add mark onto the TMS trigger line
+t = text(0, y(1)-.005, 'stimulus', 'Fontsize', textFontSize);
+t.FontWeight = 'bold';
+t.HorizontalAlignment = 'center';
 % plot the left stimulus
-p1 = plot(EEG.times, distance_cos_group_ave_smoothed(1,:), 'lineWidth', 3, 'Color', 'r');
-shadedError(EEG.times, distance_cos_group_ave_smoothed(1,:), distance_cos_group_err_smoothed(1,:), 'r');
+p1 = plot(EEG.times, distance_cos_group_ave(1,:), 'lineWidth', 3, 'Color', 'r');
+shadedError(EEG.times, distance_cos_group_ave(1,:), distance_cos_group_err(1,:), 'r');
 % plot the right stimulus
-p3 = plot(EEG.times, distance_cos_group_ave_smoothed(2,:), 'lineWidth', 3, 'Color', 'b');
-shadedError(EEG.times, distance_cos_group_ave_smoothed(2,:), distance_cos_group_err_smoothed(2,:), 'b');
+p3 = plot(EEG.times, distance_cos_group_ave(2,:), 'lineWidth', 3, 'Color', 'b');
+shadedError(EEG.times, distance_cos_group_ave(2,:), distance_cos_group_err(2,:), 'b');
 
 % add the legend
 legend([p1, p3], group_name);
@@ -360,16 +357,16 @@ titleFontSize = 28;
 axisFontSize = 20;
 textFontSize = 16;
 
-% % Add the line at TMS impulse
-% ylim([-0.08, 0.08]);
-% y = ylim;
-% p = plot([0 0], [y(1) y(2)]);
-% p.Color = 'black';
-% p.LineWidth = 2;
-% % Add mark onto the TMS trigger line
-% t = text(0, y(1)-.005, 'stimulus', 'Fontsize', textFontSize);
-% t.FontWeight = 'bold';
-% t.HorizontalAlignment = 'center';
+% Add the line at TMS impulse
+ylim([-0.02, 0.05]);
+y = ylim;
+p = plot([0 0], [y(1) y(2)]);
+p.Color = 'black';
+p.LineWidth = 2;
+% Add mark onto the TMS trigger line
+t = text(0, y(1)-.005, 'stimulus', 'Fontsize', textFontSize);
+t.FontWeight = 'bold';
+t.HorizontalAlignment = 'center';
 % plot the left AMI
 p1 = plot(EEG.times, distance_cos_group_ave(1,:), 'lineWidth', 3, 'Color', 'r');
 shadedError(EEG.times, distance_cos_group_ave(1,:), distance_cos_group_err(1,:), 'r');
