@@ -10,6 +10,7 @@ subject = {'SUMO_0102', 'SUMO_0104', 'SUMO_0105', 'SUMO_0106',  ...
            'SUMO_3001', 'SUMO_3017', 'SUMO_3015'};
 type = {'stim', 'cue1', 'tms1', 'probe1', 'cue2', 'tms2', 'probe2'};
 ROI = {'PO3', 'PO4'};
+
 %% Load subjects' eeg for preprocessing and FFT
 for t = 1:length(type)
     for s = 1 : length(subject)
@@ -45,7 +46,7 @@ for t = 1:length(type)
         data = EEG.data(impchan,:,:);
         
         % FFT, from Jason's code
-        [pow, ~, ~, dstimes, freqs] = dothewave(data, 1000, [2 50], 49, 4, [1], [-200 -20], EEG.times);
+        [pow, ~, ~, dstimes, freqs] = dothewave(data, 1000, [2 50], 49, 4, (1), [-200 -20], EEG.times);
 
         % calculate the mean across the trials, then put into the 4-d tensor
         pow_left = squeeze(mean(pow(:,:,:,leftTrial),4));
