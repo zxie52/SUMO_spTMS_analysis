@@ -61,7 +61,7 @@ ROI = {'CP2', 'CP4', 'CP6', 'TP8', 'TP10', ...
 impchan = find(ismember({EEG.chanlocs.labels}, ROI)); %channels in R hem
 
 super_charge = EEG.data(impchan,:,tmp2(:,1));
-theta = tmp2(:,2);
+% theta = tmp2(:,2);
 %theta = deg2rad(tmp2(:,4));
 data = single(permute(super_charge, [3 1 2]));
 n_folds = 10;

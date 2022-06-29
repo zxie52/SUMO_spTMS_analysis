@@ -1,0 +1,288 @@
+import numpy as np
+import pandas as pd
+import pickle
+import os.path
+import matplotlib.pyplot as plt
+from joblib import Memory
+from joblib import Parallel, delayed
+import joblib
+from scipy import stats
+from pathlib import Path
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import ShuffleSplit, cross_val_score
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+import mne
+from mne.datasets import sample
+from mne.decoding import (SlidingEstimator, GeneralizingEstimator, Scaler,
+                          cross_val_multiscore, LinearModel, get_coef,
+                          Vectorizer, CSP)
+from mne import (read_epochs, combine_evoked, write_evokeds)
+from mne.stats import bonferroni_correction, fdr_correction
+from mne import io
+# #from nback_config import (deriv_dir, preprocess_opts, event_id,
+#                           bv_montage)
+
+##
+number_of_cpu = joblib.cpu_count()
+folder_name_eeg = '/Users/cchao3/mne_data/data/derivatives/task-nback/all_participants'
+ending_name_eeg = '_task-nback_ref-avg_desc-cleaned_epo.fif.gz'
+sub_list =['/sub-0125','/sub-0145','/sub-0344','/sub-0362','/sub-0426','/sub-0446','/sub-1013','/sub-1037','/sub-1057','/sub-1150','/sub-1186','/sub-1193','/sub-1221','/sub-1222','/sub-1228','/sub-1245','/sub-1247','/sub-1251','/sub-1257','/sub-1258','/sub-1263','/sub-1294','/sub-1298','/sub-1433','/sub-1518','/sub-1541']
+labeling_name = '_task-nback_desc-cleaned_metadata.tsv'
+T_labeling_name = '_task-nback_desc-triallevel_beh.tsv'
+D_labeling_name = '_task-nback_desc-cleaned_droppedepochs.tsv'
+
+eeg_file_name_all =[];labeling_file_name_all = [];T_labeling_file_name_all = [];D_labeling_file_name_all =[]
+for j in range(len(sub_list)):
+    eeg_file_name = [folder_name_eeg + sub_list[j] + ending_name_eeg]
+    labeling_file_name = [folder_name_eeg + sub_list[j] + labeling_name]
+    eeg_file_name_all = eeg_file_name_all + eeg_file_name
+    T_labeling_file_name = [folder_name_eeg + sub_list[j] + T_labeling_name]
+    D_labeling_file_name = [folder_name_eeg + sub_list[j] + D_labeling_name]
+    
+    labeling_file_name_all = labeling_file_name_all + labeling_file_name
+    T_labeling_file_name_all = T_labeling_file_name_all + T_labeling_file_name
+    D_labeling_file_name_all = D_labeling_file_name_all + D_labeling_file_name
+
+F_labelings = [];
+Post_1back_X_all= [];Post_1back_Y_all =[];
+Post_1back_X_all_OvO = [];Post_1back_Y_all_OvO = [];
+
+for i in range(len(eeg_file_name_all)):
+    epochs = read_epochs(eeg_file_name_all[i])
+    labelings_all = pd.read_csv(labeling_file_name_all[i], sep = '\t') 
+    T_labelings_all = pd.read_csv(T_labeling_file_name_all[i], sep = '\t') 
+    
+    # find the drop epochs 
+    D_labelings_all = pd.read_csv(D_labeling_file_name_all[i], sep = '\t')
+    D_labelings_all = D_labelings_all.columns
+    D_labelings_all = D_labelings_all[0:len(D_labelings_all)-1]
+    D_labelings_all_r = pd.Index.tolist(D_labelings_all)
+    #D_labelings_all_r = D_labelings_all_r[0:len(D_labelings_all_r)-1]
+    D_labelings_all_r_int = list(map(int,D_labelings_all_r))
+    
+    # final labelings
+    #TF_labelings = pd.DataFrame.to_numpy(T_labelings_all)
+    #F_labelings = np.delete(TF_labelings,(D_labelings_all_r_int),0)
+    F_labelings = T_labelings_all.drop(D_labelings_all_r_int)
+    
+    trial_1back = np.squeeze(np.asarray(np.where(F_labelings.phase == '1back')))
+    labelings_1back = F_labelings.loc[0:np.max(trial_1back),:]
+    X = epochs.get_data()  # EEG signals: n_epochs, n_meg_channels, n_times
+    #X1back = X [labelings_1back.index,0:64,:] # 1back #64 channel
+    X1back = X[0:len(trial_1back),:,:]
+    #labels = epochs.events[0:trial_1back, 2]   # event_id
+    
+    ###### Post-stimulus 
+    ##### find the scene label (active, label 1) vs object & face (irrelevant,label 2)
+    labelings_1back_repeat_col = labelings_1back.iloc[:,19]
+    labelings_1back_post_active = labelings_1back.current_cat
+    labelings_1back_repeat = np.array(np.where(labelings_1back_repeat_col == 1))
+    labelings_1back_non_repeat = np.array(np.where(labelings_1back_repeat_col == 0))
+    ## overall
+    scene_post_label_t = np.squeeze((np.where(labelings_1back_post_active == 'scenes')))
+    object_post_label_t = np.squeeze((np.where(labelings_1back_post_active == 'objects')))
+    face_post_label_t = np.squeeze((np.where(labelings_1back_post_active == 'faces')))
+    X_scene_post = X1back[scene_post_label_t, :, :]
+    X_object_post = X1back[object_post_label_t, :, :]
+    X_face_post = X1back[face_post_label_t, :, :]
+    
+    # One vs. Others
+    # find the scene label vs object & face (others)
+    scene_1_post_all = np.array(['scenes']*np.size(scene_post_label_t))
+    object_1_post_all = np.array(['others']*np.size(object_post_label_t));face_1_post_all = np.array(['others']*np.size(face_post_label_t))
+    labelings_1back_post_object_face_1_all = np.concatenate((object_1_post_all,face_1_post_all))
+    Y1back_post_active_scene_all = np.concatenate((scene_1_post_all,labelings_1back_post_object_face_1_all))
+    X1back_post_active_scene_all = np.concatenate((X_scene_post,X_object_post,X_face_post))
+    
+    # find the object label vs scene & face (others)
+    object_2_post_all = np.array(['scenes']*np.size(object_post_label_t))
+    scene_2_post_all = np.array(['others']*np.size(scene_post_label_t));face_2_post_all = np.array(['others']*np.size(face_post_label_t))
+    labelings_1back_post_scene_face_2_all = np.concatenate((scene_2_post_all,face_2_post_all))
+    Y1back_post_active_object_all = np.concatenate((object_2_post_all,labelings_1back_post_scene_face_2_all))
+    X1back_post_active_object_all = np.concatenate((X_object_post,X_scene_post,X_face_post))
+    
+    # find the scene label vs object & face (others)
+    face_3_post_all = np.array(['scenes']*np.size(face_post_label_t))
+    object_3_post_all = np.array(['others']*np.size(object_post_label_t));scene_3_post_all = np.array(['others']*np.size(scene_post_label_t))
+    labelings_1back_post_object_scene_3_all = np.concatenate((object_3_post_all,scene_3_post_all))
+    Y1back_post_active_face_all = np.concatenate((face_3_post_all,labelings_1back_post_object_scene_3_all))
+    X1back_post_active_face_all = np.concatenate((X_face_post,X_object_post,X_scene_post))
+    
+  
+    Post_1back_X = [];  Post_1back_Y= [];
+    Post_1back_X = [X1back_post_active_scene_all, X1back_post_active_object_all, X1back_post_active_face_all] 
+    Post_1back_Y = [Y1back_post_active_scene_all, Y1back_post_active_object_all, Y1back_post_active_face_all]
+    
+    Post_1back_X_all = Post_1back_X_all + Post_1back_X  # X post active scene, object, face 
+    Post_1back_Y_all = Post_1back_Y_all + Post_1back_Y # Y post active scene, object, face 
+    
+    # One vs. One
+    scene_4_post = np.array(['scenes']*np.size(scene_post_label_t))
+    object_4_post = np.array(['objects']*np.size(object_post_label_t));face_4_post = np.array(['faces']*np.size(face_post_label_t))
+    # scene vs object & scene vs face
+    Y1back_post_active_scene_object_OvO = np.concatenate((scene_4_post,object_4_post))
+    X1back_post_active_scene_object_OvO = np.concatenate((X_scene_post,X_object_post))
+    Y1back_post_active_scene_face_OvO = np.concatenate((scene_4_post,face_4_post))
+    X1back_post_active_scene_face_OvO = np.concatenate((X_scene_post,X_face_post))
+    # object vs scene & object vs face
+    #Y1back_pre_active_object_OvO_1 = np.concatenate((object_4_pre,scene_4_pre))
+    #X1back_pre_active_object_OvO_1 = np.concatenate((X_object_pre,X_scene_pre))
+    Y1back_post_active_object_face_OvO = np.concatenate((object_4_post,face_4_post))
+    X1back_post_active_object_face_OvO = np.concatenate((X_object_post,X_face_post))
+    
+    Post_1back_X_OvO = [];  Post_1back_Y_OvO= [];
+    Post_1back_X_OvO = [X1back_post_active_scene_object_OvO, X1back_post_active_scene_face_OvO, X1back_post_active_object_face_OvO] 
+    Post_1back_Y_OvO = [Y1back_post_active_scene_object_OvO, Y1back_post_active_scene_face_OvO, Y1back_post_active_object_face_OvO]
+    
+    Post_1back_X_all_OvO = Post_1back_X_all_OvO + Post_1back_X_OvO  # X post active scene, object, face 
+    Post_1back_Y_all_OvO = Post_1back_Y_all_OvO + Post_1back_Y_OvO # Y post active scene, object, face 
+    
+  
+
+clf = make_pipeline(Scaler(epochs.info),
+                    Vectorizer(),
+                    LogisticRegression(solver='lbfgs'))
+# CSP
+csp = CSP(n_components=5, norm_trace=False, cov_est='concat', cov_method_params = dict)
+clf_csp = make_pipeline(csp, LinearModel(LogisticRegression(solver='lbfgs')))
+# Time_decoding
+clf_1 = make_pipeline(StandardScaler(), LogisticRegression(solver='lbfgs'))
+time_decode = SlidingEstimator(clf_1, n_jobs=number_of_cpu, scoring='roc_auc', verbose=True)
+
+Post_1back_TD_all = [];Post_1back_TD_all_OvO= [];
+for k in range(int(len(Post_1back_X_all_OvO) / 3)):  # each participants has three conditins  
+    
+    # CSP
+    #CSP_scores_scene = cross_val_multiscore(clf_csp, Post_1back_X_all[k*3], Post_1back_Y_all[k*3], cv=5, n_jobs=1)
+    #CSP_scores_object = cross_val_multiscore(clf_csp, Post_1back_X_all[k*3+1], Post_1back_Y_all[k*3+1], cv=5, n_jobs=1)
+    #CSP_scores_face = cross_val_multiscore(clf_csp, Post_1back_X_all[k*3+2], Post_1back_Y_all[k*3+2], cv=5, n_jobs=1)
+    
+    # Time decoding non_repeat
+    # One vs. Others
+    #TD_scores_scene = cross_val_multiscore(time_decode, Post_1back_X_all[k*3], Post_1back_Y_all[k*3], cv= len(np.squeeze(np.asarray(np.where(Post_1back_Y_all[k*3]=='scenes')))), n_jobs=number_of_cpu)
+    #TD_scores_object = cross_val_multiscore(time_decode, Post_1back_X_all[k*3+1], Post_1back_Y_all[k*3+1], cv=len(np.squeeze(np.asarray(np.where(Post_1back_Y_all[k*3+1]=='objects')))), n_jobs=number_of_cpu)
+    #TD_scores_face = cross_val_multiscore(time_decode, Post_1back_X_all[k*3+2], Post_1back_Y_all[k*3+2], cv=len(np.squeeze(np.asarray(np.where(Post_1back_Y_all[k*3+2]=='faces')))), n_jobs=number_of_cpu) 
+    #scores_TD_scene = np.mean(TD_scores_scene, axis=0)
+    #scores_TD_object = np.mean(TD_scores_object, axis=0)
+    #scores_TD_face = np.mean(TD_scores_face, axis=0)
+    #print(scores_TD_scene)
+    #print(scores_TD_object)
+    #print(scores_TD_face)
+   
+    #Post_1back_TD_all_e = [scores_TD_scene,scores_TD_object,scores_TD_face]
+    #Post_1back_TD_all = Post_1back_TD_all+ Post_1back_TD_all_e
+    
+    # One vs. One
+    TD_scores_scene_object_OvO = cross_val_multiscore (time_decode, Post_1back_X_all_OvO[k*3], Post_1back_Y_all_OvO[k*3], cv = 3, n_jobs=number_of_cpu)
+    TD_scores_scene_face_OvO = cross_val_multiscore (time_decode, Post_1back_X_all_OvO[k*3+1], Post_1back_Y_all_OvO[k*3+1], cv = 3, n_jobs=number_of_cpu)
+    TD_scores_object_face_OvO = cross_val_multiscore (time_decode, Post_1back_X_all_OvO[k*3+2], Post_1back_Y_all_OvO[k*3+2], cv = 3, n_jobs=number_of_cpu)
+
+    scores_TD_scene_object = np.mean(TD_scores_scene_object_OvO, axis=0)
+    scores_TD_scene_face = np.mean(TD_scores_scene_face_OvO, axis=0)
+    scores_TD_object_face = np.mean(TD_scores_object_face_OvO, axis=0)
+
+    scores_TD_scene_OvO = np.mean(np.row_stack((scores_TD_scene_object,scores_TD_scene_face)),axis = 0)
+    scores_TD_object_OvO = np.mean(np.row_stack((scores_TD_scene_object, scores_TD_object_face)),axis = 0)
+    scores_TD_face_OvO = np.mean(np.row_stack((scores_TD_scene_face, scores_TD_object_face)), axis = 0)
+    
+       
+    Post_1back_TD_all_OvO_e = [scores_TD_scene_OvO,scores_TD_object_OvO,scores_TD_face_OvO]
+    Post_1back_TD_all_OvO = Post_1back_TD_all_OvO + Post_1back_TD_all_OvO_e
+
+    
+        
+Post_1back_TD_all_scene_overall = [];Post_1back_TD_all_object_overall = [];Post_1back_TD_all_face_overall = []
+Post_1back_TD_all_scene_overall_OvO = [];Post_1back_TD_all_object_overall_OvO = [];Post_1back_TD_all_face_overall_OvO = []
+
+for o in range(int(len(Post_1back_TD_all_OvO) / 3)):
+        
+    # overall
+    Post_1back_TD_all_scene_overall_OvO.append(Post_1back_TD_all_OvO[o*3]) 
+    Post_1back_TD_all_object_overall_OvO.append(Post_1back_TD_all_OvO[o*3+1]) 
+    Post_1back_TD_all_face_overall_OvO.append(Post_1back_TD_all_OvO[o*3+2])  
+    
+    # plot all subs post_stimulus 
+    # overall
+    #fig, ax = plt.subplots(3,figsize=(15,15))
+    #ax[0].plot(epochs.times, Post_1back_TD_all_OvO[o*3], label='secen')
+    #ax[0].axhline(.5, color='k', linestyle='--', label='chance')
+    #ax[1].plot(epochs.times, Post_1back_TD_all_OvO[o*3+1], label='object')
+    #ax[1].axhline(.5, color='k', linestyle='--', label='chance')
+    #ax[2].plot(epochs.times, Post_1back_TD_all_OvO[o*3+2], label='face')
+    #ax[2].axhline(.5, color='k', linestyle='--', label='chance')
+    #ax[0].set_xlabel('Times');ax[1].set_xlabel('Times');ax[2].set_xlabel('Times');
+    #ax[0].set_ylabel('AUC'); ax[1].set_ylabel('AUC'); ax[2].set_ylabel('AUC'); 
+    #ax[0].legend();ax[1].legend();ax[2].legend();
+    #ax[0].axvline(.0, color='k', linestyle='-'); ax[1].axvline(.0, color='k', linestyle='-');ax[2].axvline(.0, color='k', linestyle='-');
+    #ax[0].set_title('post_active scene');ax[1].set_title('post_active object');ax[2].set_title('post_active face');
+    
+
+# save data
+
+save_path = ('/Users/cchao3/mne_data/data/Post_stim_data/')
+post_1back_x_file_name_all_OvO = "Post_1back_TD_all_OvO"
+
+file_x_all_OvO = open(save_path + post_1back_x_file_name_all_OvO,'wb')
+pickle.dump(Post_1back_TD_all_OvO, file_x_all_OvO)
+file_x_all_OvO.close()
+
+
+# plot the average scores
+# all OvO
+Post_1back_TD_all_Mean_scene_all_OvO = np.mean(Post_1back_TD_all_scene_overall_OvO, axis=0)
+Post_1back_TD_all_Mean_object_all_OvO = np.mean(Post_1back_TD_all_object_overall_OvO, axis=0)
+Post_1back_TD_all_Mean_face_all_OvO = np.mean(Post_1back_TD_all_face_overall_OvO, axis=0)
+
+#fig, ax = plt.subplots(3,figsize=(15,15))
+#ax[0].plot(epochs.times, Pre_1back_TD_all_Mean_scene_all_OvO, label='secen')
+#ax[0].axhline(.5, color='k', linestyle='--', label='chance')
+#ax[1].plot(epochs.times, Pre_1back_TD_all_Mean_object_all_OvO, label='object')
+#ax[1].axhline(.5, color='k', linestyle='--', label='chance')
+#ax[2].plot(epochs.times, Pre_1back_TD_all_Mean_face_all_OvO, label='face')
+#ax[2].axhline(.5, color='k', linestyle='--', label='chance')
+#ax[0].set_xlabel('Times');ax[1].set_xlabel('Times');ax[2].set_xlabel('Times');
+#ax[0].set_ylabel('AUC'); ax[1].set_ylabel('AUC'); ax[2].set_ylabel('AUC'); 
+#ax[0].legend();ax[1].legend();ax[2].legend();
+#ax[0].axvline(.0, color='k', linestyle='-'); ax[1].axvline(.0, color='k', linestyle='-');ax[2].axvline(.0, color='k', linestyle='-');
+#ax[0].set_title('post_active scene_nr');ax[1].set_title('post_active object_nr');ax[2].set_title('post_active face_nr');
+
+
+plt.plot(epochs.times, Post_1back_TD_all_Mean_scene_all_OvO, 'b', label='Scene_post')
+xmin, xmax = plt.xlim()
+plt.hlines(0.5, xmin, xmax, linestyle='--', colors='k',
+           label='chance', linewidth=2)
+#plt.hlines(threshold_fdr_f_p, xmin, xmax, linestyle='--', colors='b',
+           #label='p=0.05 (FDR)', linewidth=2)
+plt.legend()
+plt.xlabel("Time (sec)")
+plt.ylabel("AUC")
+# plt.savefig("E4.pdf", format="pdf", bbox_inches="tight")
+plt.show()
+
+plt.plot(epochs.times, Post_1back_TD_all_Mean_object_all_OvO, 'b', label='Object_post')
+xmin, xmax = plt.xlim()
+plt.hlines(0.5, xmin, xmax, linestyle='--', colors='k',
+           label='chance', linewidth=2)
+#plt.hlines(threshold_fdr_f_p, xmin, xmax, linestyle='--', colors='b',
+           #label='p=0.05 (FDR)', linewidth=2)
+plt.legend()
+plt.xlabel("Time (sec)")
+plt.ylabel("AUC")
+# plt.savefig("E4.pdf", format="pdf", bbox_inches="tight")
+plt.show()
+
+plt.plot(epochs.times, Post_1back_TD_all_Mean_face_all_OvO, 'b', label='Face_post')
+xmin, xmax = plt.xlim()
+plt.hlines(0.5, xmin, xmax, linestyle='--', colors='k',
+           label='chance', linewidth=2)
+#plt.hlines(threshold_fdr_f_p, xmin, xmax, linestyle='--', colors='b',
+           #label='p=0.05 (FDR)', linewidth=2)
+plt.legend()
+plt.xlabel("Time (sec)")
+plt.ylabel("AUC")
+# plt.savefig("E4.pdf", format="pdf", bbox_inches="tight")
+plt.show()
