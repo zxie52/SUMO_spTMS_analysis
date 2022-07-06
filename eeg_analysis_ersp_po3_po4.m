@@ -12,7 +12,7 @@ type = {'stim', 'cue1', 'tms1', 'probe1', 'cue2', 'tms2', 'probe2'};
 ROI = {'PO3', 'PO4'};
 
 %% Load subjects' eeg for preprocessing and FFT
-for t = 1:length(type)
+for t = 2 %1:length(type)
     for s = 1 : length(subject)
         % load eeg data
         cd(fpath8);
@@ -69,6 +69,7 @@ for t = 1:length(type)
     %% Plotting the ersp for PO3, PO4 for left trials and right trials
     cd(fpath12);
     % plot the left trials
+    % 1 for PO3 and 2 for PO4
     for i = 1:2
         imagesc(dstimes3, freqs, squeeze(pow_left_group_mean(i,:,dstimes2)));
         ersp_fig_setup();
@@ -77,6 +78,15 @@ for t = 1:length(type)
         saveas(gcf, strcat("allsubjects_ersp_left_", type{t},"_", ROI{i},"_heatmap.png"));
         saveas(gcf, strcat("allsubjects_ersp_left_", type{t},"_", ROI{i},"_heatmap.svg"));
     end
+    
+    % contra - ipsi = PO4 - PO3
+    contra_ipsi = squeeze(pow_left_group_mean(2,:,dstimes2)) - squeeze(pow_left_group_mean(1,:,dstimes2));
+    imagesc(dstimes3, freqs, contra_ipsi);
+    ersp_fig_setup();
+    title(strcat("Contra minus Ipsi on Left Trials on ", type{t}), 'Fontsize', 25);
+    savefig(strcat("allsubjects_ersp_contra_ipsi_left_", type{t},"_heatmap"));
+    saveas(gcf, strcat("allsubjects_ersp_contra_ipsi_left_", type{t},"_heatmap.png"));
+    saveas(gcf, strcat("allsubjects_ersp_contra_ipsi_left_", type{t},"_heatmap.svg"));
 
     % plot the right trials
     for i = 1:2
@@ -87,4 +97,13 @@ for t = 1:length(type)
         saveas(gcf, strcat("allsubjects_ersp_right_", type{t},"_", ROI{i},"_heatmap.png"));
         saveas(gcf, strcat("allsubjects_ersp_right_", type{t},"_", ROI{i},"_heatmap.svg"));
     end
+    
+    % contra - ipsi = PO3 - PO4
+    contra_ipsi = squeeze(pow_right_group_mean(1,:,dstimes2)) - squeeze(pow_right_group_mean(2,:,dstimes2));
+    imagesc(dstimes3, freqs, contra_ipsi);
+    ersp_fig_setup();
+    title(strcat("Contra minus Ipsi on Right Trials on ", type{t}), 'Fontsize', 25);
+    savefig(strcat("allsubjects_ersp_contra_ipsi_right_", type{t},"_heatmap"));
+    saveas(gcf, strcat("allsubjects_ersp_contra_ipsi_right_", type{t},"_heatmap.png"));
+    saveas(gcf, strcat("allsubjects_ersp_contra_ipsi_right_", type{t},"_heatmap.svg"));
 end
