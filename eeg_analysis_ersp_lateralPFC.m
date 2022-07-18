@@ -20,7 +20,7 @@ while ~ismember(condition, {'dlpfc'})
     warning("For frontal midline, please check the MATLAB code: eeg_analysis_ersp_frontal_midline.m")
     warning("For lateral posterior, please check the MATLAB code: eeg_analysis_ersp_po3_po4.m")
     warning("The input condition is not available, please re-type the condition: dlpfc");
-    condition = input("What clusetr of electrodes you want to pick, lateral posterior(lp)?\n", 's');
+    condition = input("What clusetr of electrodes you want to pick, lateral posterior(dlpfc)?\n", 's');
 end
 
 %% Load subjects' eeg for preprocessing and FFT
@@ -106,8 +106,12 @@ for t = 2 %1:length(type)
         tmpersp(pvals{1} > 0.05) = 0; % zero out non-significant values
         
         % plot the ersp(FDR-corrected)
-        imagesc(dstimes, freqs, squeeze(mean(tmpersp,3))); 
+        imagesc(dstimes3, freqs, squeeze(mean(pow_left_group_mean(g,:,dstimes2),1)));
         ersp_fig_setup();
+        hold on;
+        % mark the significant regions
+        contour(dstimes3, 2:50, squeeze(mean(tmpersp(:,dstimes2,:),3)), [1,1], '--k', 'LineWidth', 3)
+        hold off;
         title(strcat(cond(i)," DLPFC on Left Trials on ", type{t}, " (FDR-corrected)"), 'Fontsize', 25);
         savefig(strcat("allsubjects_ersp_left_", type{t},"_", cond(i),"_heatmap_fdr_corrected"));
         saveas(gcf, strcat("allsubjects_ersp_left_", type{t},"_", cond(i),"_heatmap_fdr_corrected.png"));
@@ -134,8 +138,12 @@ for t = 2 %1:length(type)
     tmpersp = mean(test,4); % average ERSP for all subjects
     tmpersp(pvals{1} > 0.05) = 0; % zero out non-significant values
     
-    imagesc(dstimes3, freqs, squeeze(mean(tmpersp,3)));
+    imagesc(dstimes3, freqs, squeeze(mean(contra_ipsi,4)));
     ersp_fig_setup();
+    hold on;
+    % mark the significant regions
+    contour(dstimes3, 2:50, tmpersp, [1,1], '--k', 'LineWidth', 3)
+    hold off;
     title(strcat("Contra minus Ipsi on Left Trials on ", type{t}, " (FDR-corrected)"), 'Fontsize', 25);
     savefig(strcat("allsubjects_ersp_contra_ipsi_left_", type{t},"_heatmap_fdr_corrected"));
     saveas(gcf, strcat("allsubjects_ersp_contra_ipsi_left_", type{t},"_heatmap_fdr_corrected.png"));
@@ -163,8 +171,12 @@ for t = 2 %1:length(type)
         tmpersp(pvals{1} > 0.05) = 0; % zero out non-significant values
         
         % plot the ersp(FDR-corrected)
-        imagesc(dstimes, freqs, squeeze(mean(tmpersp,3))); 
+        imagesc(dstimes3, freqs, squeeze(mean(pow_right_group_mean(g,:,dstimes2),1)));
         ersp_fig_setup();
+        hold on;
+        % mark the significant regions
+        contour(dstimes3, 2:50, squeeze(mean(tmpersp(:,dstimes2,:),3)), [1,1], '--k', 'LineWidth', 3)
+        hold off;
         title(strcat(cond(i)," DLPFC on Right Trials on ", type{t}, " (FDR-corrected)"), 'Fontsize', 25);
         savefig(strcat("allsubjects_ersp_right_", type{t},"_", cond(i),"_heatmap_fdr_corrected"));
         saveas(gcf, strcat("allsubjects_ersp_right_", type{t},"_", cond(i),"_heatmap_fdr_corrected.png"));
@@ -191,8 +203,12 @@ for t = 2 %1:length(type)
     tmpersp = mean(test,4); % average ERSP for all subjects
     tmpersp(pvals{1} > 0.05) = 0; % zero out non-significant values
     
-    imagesc(dstimes3, freqs, squeeze(mean(tmpersp,3)));
+    imagesc(dstimes3, freqs, squeeze(mean(contra_ipsi,4)));
     ersp_fig_setup();
+    hold on;
+    % mark the significant regions
+    contour(dstimes3, 2:50, tmpersp, [1,1], '--k', 'LineWidth', 3)
+    hold off;
     title(strcat("Contra minus Ipsi on Right Trials on ", type{t}, " (FDR-corrected)"), 'Fontsize', 25);
     savefig(strcat("allsubjects_ersp_contra_ipsi_right_", type{t},"_heatmap_fdr_corrected"));
     saveas(gcf, strcat("allsubjects_ersp_contra_ipsi_right_", type{t},"_heatmap_fdr_corrected.png"));

@@ -81,14 +81,14 @@ for t = 2 %1:length(type)
     tmpersp = squeeze(mean(test,4)); % average ERSP for all subjects
     tmpersp(pvals{1} > 0.05) = 0; % zero out non-significant values
     
-    imagesc(dstimes3, freqs, squeeze(mean(tmpersp(:,dstimes2),3)));
-    caxis([0 10]);
-    set(gca, 'ydir', 'normal'); xlabel('Time (ms)'); ylabel('Frequencies (Hz)'); cbar; % plot ERSP
-% 
+    imagesc(dstimes3, freqs, ersp_group_mean(:,dstimes2));
     ersp_fig_setup();
+    hold on;
+    % mark the significant regions
+    contour(dstimes3, 2:50, squeeze(mean(tmpersp(:,dstimes2,:),3)), [1,1], '--k', 'LineWidth', 3)
+    hold off;
     title(strcat("Midline Frontal on All Trials on ", type{t}, " (FDR-corrected)"), 'Fontsize', 25);
     savefig(strcat("allsubjects_ersp_", type{t},"_heatmap_fdr_corrected"));
     saveas(gcf, strcat("allsubjects_ersp_", type{t},"_heatmap_fdr_corrected.png"));
     saveas(gcf, strcat("allsubjects_ersp_", type{t},"_heatmap_fdr_corrected.svg"));
-    
 end
