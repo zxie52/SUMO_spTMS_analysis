@@ -39,6 +39,7 @@ for t = 2 %1:length(type)
                 % get left trial and right trial numebers 
                 leftTrial = p.epoch(p.targetlocation == 1);
                 rightTrial = p.epoch(p.targetlocation == 2);
+                error("Wrong code, using 'eeg_analysis_ersp_posterior_stim_only.m' instead");
             otherwise
                 % for other epochs, only pick up the correct trials
                 % filter only correct trials in the probe1
