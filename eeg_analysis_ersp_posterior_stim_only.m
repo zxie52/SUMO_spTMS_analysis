@@ -5,18 +5,20 @@ clear;
 % using CRC
 addpath(genpath('/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/analysis_code'));
 addpath(genpath('/afs/crc.nd.edu/group/roselab/vol2/zx/matlab_envi/'));
-fpath8 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/eeg_before_IEM';
+% fpath8 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/eeg_before_IEM';
 % this code is only for the stim epoch
-fpath12 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/ERSP_results_stim_epoch';
-
+% fpath12 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/ERSP_results_stim_epoch';
+fpath8 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\eeg_before_IEM';
+fpath12 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\ERSP_results_stim_epoch';
 subject = {'SUMO_0102', 'SUMO_0104', 'SUMO_0105', 'SUMO_0106',  ...
            'SUMO_0108', 'SUMO_0111', 'SUMO_0114', 'SUMO_0120',...
            'SUMO_3001', 'SUMO_3017', 'SUMO_3015'};
 type = {'stim', 'cue1', 'tms1', 'probe1', 'cue2', 'tms2', 'probe2'};
 
-ROI = {'Pz', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', ...
-       'POz', 'PO3', 'PO4', 'PO7', 'PO8', ...
-       'Oz', 'O1', 'O2'};
+% ROI = {'Pz', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', ...
+%        'POz', 'PO3', 'PO4', 'PO7', 'PO8', ...
+%        'Oz', 'O1', 'O2'};
+ROI = {'Pz', 'P1', 'P2'};
 
 %% Load subjects' eeg for preprocessing and FFT
 for t = 1
@@ -53,6 +55,7 @@ for t = 1
     
     %% Plotting the ersp for midline frontal for all trials
     cd(fpath12);
+    save("datasets.mat", 'pow_group');
     % calculate the average across all channels and all trials
     ersp_group_mean = squeeze(mean(mean(pow_group,1),4));
     imagesc(dstimes3, freqs, ersp_group_mean(:,dstimes2));
