@@ -28,8 +28,8 @@ close all;
 
 addpath(genpath('/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/analysis_code'));
 addpath(genpath('/afs/crc.nd.edu/group/roselab/vol2/zx/matlab_envi/'));
-fpath8 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\eeg_before_IEM';
-fpath13 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\IEM_results_broadband_tms2';
+fpath8 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/eeg_before_IEM';
+fpath13 = '/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/IEM_results_broadband_tms2';
 
 %%% Warning: due to the warning from iem function("Warning: rank deficient, rank = 6") on SUMO 3001
 %%% and SUMO 3017, we have to skip those two subjects first.
