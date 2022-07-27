@@ -29,7 +29,7 @@ close all;
 addpath(genpath('/afs/crc.nd.edu/group/roselab/vol2/zx/new_results/analysis_code'));
 addpath(genpath('/afs/crc.nd.edu/group/roselab/vol2/zx/matlab_envi/'));
 fpath8 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\eeg_before_IEM';
-fpath13 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\IEM_results_theta_tms2';
+fpath13 = 'E:\SUMO_further_data_pack_zx\N2pc_IEM\new_results\IEM_results_broadband_tms2';
 
 %%% Warning: due to the warning from iem function("Warning: rank deficient, rank = 6") on SUMO 3001
 %%% and SUMO 3017, we have to skip those two subjects first.
@@ -87,20 +87,19 @@ for l = 1:length(subject)
         % Run the dothewave function to have pow matrix
         % We can change from [2 50] to [8 13](alpha power)
         % This time we pick the pre-TMS interval as baseline for FFT 
-        [pow, ~, ~, dstimes, freqs] = dothewave(EEG.data, 1000, [5 7], 3, 4, 1, [], EEG.times);
+        [pow, ~, ~, dstimes, freqs] = dothewave_broadband(EEG.data, 1000, 4, 1, [], EEG.times);
   
-
         %% Extra Step: remove the pre_stim baseline
         % Load the baseline from pre-stimulus period
         cd(fpath8);
-        load(strcat('Pre_stimulus_theta_power_baseline', subject{l}, '.mat'))
+        load(strcat('Pre_stimulus_broadband_power_baseline', subject{l}, '.mat'))
         tmp = [];
 
         % Only Pick the alpha frequencies(first 6 frequency band)
         tmp = 100 * bsxfun(@rdivide, bsxfun(@minus, pow, pow_base), pow_base);
 
         % Average the 6 frequencies into one
-        theta_power = squeeze(mean(tmp,2));   
+        power = squeeze(mean(tmp,2));   
 
         %% Running IEM
         for i = 1 : length(groups) % notice that we used the parallel envi in permutation            
@@ -112,19 +111,19 @@ for l = 1:length(subject)
             h(:,2) = bincent(colIdcs);
             
             stimlabels = h(:,2);
-            super_charge = theta_power(:,:,h(:,1));   
+            super_charge = power(:,:,h(:,1));   
             
-            %for contraanterior electrodes
+            %for contraposterior electrodes
             switch i
                 case 1
-                    ROI = {'F2', 'F4', 'F6', 'F8', ...
-                           'FC2', 'FC4', 'FC6', 'FT8', ...
-                           'C2', 'C4', 'C6'};
+                    ROI = {'CP2', 'CP4', 'CP6', 'TP8', 'TP10', ...
+                           'P2', 'P4', 'P6', 'P8', ...
+                           'PO4', 'PO8', 'O2'};
                     impchan = find(ismember({EEG.chanlocs.labels}, ROI)); %channels in R hem
                 otherwise
-                    ROI = {'F1', 'F3', 'F5', 'F7', ...
-                           'FC1', 'FC3', 'FC5', 'FT7', ...
-                           'C1', 'C3', 'C5'};
+                    ROI = {'CP1', 'CP3', 'CP5', 'TP7', 'TP9', ...
+                           'P1', 'P3', 'P5', 'P7', ...
+                           'PO3', 'PO7', 'O1'};
                     impchan = find(ismember({EEG.chanlocs.labels}, ROI)); %channels in L hem
             end
             
@@ -190,7 +189,7 @@ for l = 1:length(subject)
                 % plot the permutations
                 hold on; boundedline(bincent, mean(mean(chanresp_permsL(:,:,34:70),1),3),std(squeeze(chanresp_permsL(:,34:70)))./sqrt(30)*1.96 ,'k','alpha');
                 
-                title(strcat('Reconstruction from Theta-Power in Contra-Anterior Electrodes', group_name{i}));
+                title(strcat('Reconstruction from Broadband Power in Contra-Posterior Electrodes', group_name{i}));
                 xlabel('Centered Orientation Channel');
                 ylabel('Channel Response');
                 legend({'error', '-200-0ms','error','20-300ms','error','300-600ms','error','600-800ms'})
@@ -198,7 +197,7 @@ for l = 1:length(subject)
                 cd(fpath13);
                 saveas(gcf, strcat('SUMO_', subject{l}, '_iem_', group_name{i}));
                 saveas(gcf, strcat('SUMO_', subject{l}, '_iem_', group_name{i}, '.png'));   
-                save(strcat('IEM_Exp1_allanterior', subject{l}, '_epoch2_', group_name{i}), 'dstimes', 'stimlabels', 'chanrespsL', 'chanresp_permsL', 'h');
+                save(strcat('IEM_Exp1_allposterior', subject{l}, '_epoch2_', group_name{i}), 'dstimes', 'stimlabels', 'chanrespsL', 'chanresp_permsL', 'h');
                 
             else % for right stimuli
                 avgacrosstrials = mean(chanresp,3); %create a variable that is now 2D
@@ -235,7 +234,7 @@ for l = 1:length(subject)
                 %plot the permutations % why is it 34 : 70, and why is it sqrt(30) * 1.96
                 hold on; boundedline(bincent, mean(mean(chanresp_permsR(:,:,34:70),1),3),std(squeeze(chanresp_permsR(:,34:70)))./sqrt(30)*1.96 ,'k','alpha');
                 
-                title(strcat('Reconstruction from Theta-Power in Contra-Anterior Electrodes', group_name{i}));
+                title(strcat('Reconstruction from Broadband Power in Contra-Posterior Electrodes', group_name{i}));
                 xlabel('Centered Orientation Channel');
                 ylabel('Channel Response');
                 legend({'error', '-200-0ms','error','20-300ms','error','300-600ms','error','600-800ms'})
@@ -243,7 +242,7 @@ for l = 1:length(subject)
                 cd(fpath13);
                 saveas(gcf, strcat('SUMO_', subject{l}, '_iem_', group_name{i}));
                 saveas(gcf, strcat('SUMO_', subject{l}, '_iem_', group_name{i}, '.png'));   
-                save(strcat('IEM_Exp1_allanterior', subject{l}, '_epoch2_', group_name{i}), 'dstimes', 'stimlabels', 'chanrespsR', 'chanresp_permsR', 'h');
+                save(strcat('IEM_Exp1_allposterior', subject{l}, '_epoch2_', group_name{i}), 'dstimes', 'stimlabels', 'chanrespsR', 'chanresp_permsR', 'h');
             end
         end
     end
@@ -274,7 +273,7 @@ for i = 1 : length(group_name)
     temp1_CRP1R = [];
     
     for j = 1: length(subject)
-        load(strcat('IEM_Exp1_allanterior', subject{j}, '_epoch2_', group_name{i}));
+        load(strcat('IEM_Exp1_allposterior', subject{j}, '_epoch2_', group_name{i}));
      
         if ismember(i, group_left) % for left stimuli
             %squeeze the channel response
@@ -304,7 +303,7 @@ for i = 1 : length(group_name)
     chanresp_permsL_allsub = temp1_CRP1L;
     chanresp_permsR_allsub = temp1_CRP1R;
     
-    save(strcat('IEM_Exp1_contraanterior_allsubjects_epoch2_', group_name{i}, '_iem'), ...
+    save(strcat('IEM_Exp1_contraposterior_allsubjects_epoch2_', group_name{i}, '_iem'), ...
     'dstimes', 'stimlabels', 'chanrespsL_allsub', 'chanresp_permsL_allsub', ...
     'chanrespsR_allsub', 'chanresp_permsR_allsub'); 
 
@@ -344,7 +343,7 @@ for i = 1 : length(group_name)
         hold on;
         ylim([-.2 .6]);
 
-        title(strcat("Reconstruction from Theta-Power in Contra-Anterior Electrodes (TMS2 ", group_name{i}, ")"));
+        title(strcat("Reconstruction from Broadband Power in Contra-Posterior Electrodes (TMS2 ", group_name{i}, ")"));
         xlabel("Centered Orientation Channel");
         ylabel("Channel Response");
         legend({'error', '-200-0ms','error','20-300ms','error','300-600ms','error','600-800ms'})
@@ -399,7 +398,7 @@ for i = 1 : length(group_name)
         set(gcf, 'Position', get(0, 'Screensize'));
         
         ylabel(h, 'Channel Response (µV^2)','Fontsize', axisFontSize)
-        title(strcat("Reconstruction from Theta-Power in Contra-Anterior Electrodes (TMS2 ", group_name{i}, ")"), 'Fontsize', titleFontSize)
+        title(strcat("Reconstruction from Broadband Power in Contra-Posterior Electrodes (TMS2 ", group_name{i}, ")"), 'Fontsize', titleFontSize)
         xlabel('Time from TMS onset(msec)','Fontsize', axisFontSize)
         ylabel('Centered Orientation Channel (°)','Fontsize', axisFontSize)
         savefig(strcat('All_Subjects_iem_', group_name{i},'_heatmap'));
@@ -434,7 +433,7 @@ for i = 1 : length(group_name)
         hold on;
         ylim([-.2 .6]);
 
-        title(strcat('Reconstruction from Theta-Power in Contra-Anterior Electrodes(TMS2 ', group_name{i}, ')'));
+        title(strcat('Reconstruction from Broadband Power in Contra-Posterior Electrodes(TMS2 ', group_name{i}, ')'));
         xlabel('Centered Orientation Channel');
         ylabel('Channel Response');
         legend({'error', '-200-0ms','error','20-300ms','error','300-600ms','error','600-800ms'})
@@ -490,7 +489,7 @@ for i = 1 : length(group_name)
         set(gcf, 'Position', get(0, 'Screensize'));
         
         ylabel(h, 'Channel Response (µV^2)','Fontsize', axisFontSize)
-        title(strcat("Reconstruction from Theta-Power in Contra-Anterior Electrodes (TMS2 ", group_name{i}, ")"), 'Fontsize', titleFontSize)
+        title(strcat("Reconstruction from Broadband Power in Contra-Posterior Electrodes (TMS2 ", group_name{i}, ")"), 'Fontsize', titleFontSize)
         xlabel('Time from TMS onset(msec)','Fontsize', axisFontSize)
         ylabel('Centered Orientation Channel (°)','Fontsize', axisFontSize)
         savefig(strcat('All_Subjects_iem_', group_name{i},'_heatmap'));
