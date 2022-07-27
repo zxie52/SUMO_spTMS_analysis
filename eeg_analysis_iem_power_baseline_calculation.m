@@ -12,15 +12,16 @@ for l = 1 : length(subject)
     for t = 1
         cd(fpath8);
         EEG = pop_loadset('filename', strcat(subject{l}, '_before_iem_', type{t}, '.set'), 'filepath', fpath8);
-        
+     
         % Calculate the pre-stimulus baseline for theta power
-        % see the dothewave.m
-        [pow, ~, ~, dstimes, freqs] = dothewave(EEG.data, 1000, [5 7], 3, 4, 1, [], EEG.times);
+        % see the dothewave.m/ or dothewave_broadband.m
+        data = double(EEG.data);
+        [pow, ~, ~, dstimes, freqs] = dothewave_broadband(data, 1000, 4, 1, [], EEG.times);
         % Only calcaulate the pre-stimulus baseline from -200ms to -2ms
         % Average across timepoints and trials
         pow_base = mean(mean(pow(:,:,find(EEG.times == -200):find(EEG .times == -2),:),3), 4);
         % Saveout
         cd(fpath8);
-        save(strcat("Pre_stimulus_theta_power_baseline", subject(l)), 'pow_base', 'dstimes');
+        save(strcat("Pre_stimulus_broadband_power_baseline", subject(l)), 'pow_base', 'dstimes');
     end
 end

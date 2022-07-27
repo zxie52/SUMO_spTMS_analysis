@@ -64,7 +64,7 @@ nConv = nWave + nData - 1;
 
 %fprintf('\n performing wavelet convolution ') 
 fprintf('\n ch ') 
-for ch = 1:size(timeseries,1)
+parfor ch = 1:size(timeseries,1)
     fprintf('%d ',ch)
 
     % now compute the FFT of all trials concatenated
@@ -80,7 +80,7 @@ for ch = 1:size(timeseries,1)
 
     % now perform convolution
     % loop over frequencies
-    parfor fi=1:length(freqs)
+    for fi=1:length(freqs)
 
         % create wavelet and get its FFT
         wavelet  = exp(2*1i*pi*freqs(fi).*wavtime) .* exp(-wavtime.^2./(2*s(fi)^2));
@@ -105,30 +105,32 @@ for ch = 1:size(timeseries,1)
         pow(ch,:,:,:) = abs(tf(:,1:dsfac:end,:)).^2;
         phase(ch,:,:,:) = angle(tf(:,1:dsfac:end,:));
         comp(ch,:,:,:) = tf(:,1:dsfac:end,:);
-        %continue
-    elseif length(size(timeseries)) == 2 && isempty(baseline)
-        pow(ch,:,:) = abs(tf(:,1:dsfac:end)).^2;
-        phase(ch,:,:) = angle(tf(:,1:dsfac:end));
-        comp(ch,:,:) = tf(:,1:dsfac:end);
-        %continue
-    else
-        % percent signal change baseline using all data in timevec (i.e., possibly all conditions)
-        baselineidx(1)=dsearchn(timevec',baseline(1));
-        baselineidx(2)=dsearchn(timevec',baseline(2));
-        if length(size(timeseries))==3
-            base = mean(mean(abs(tf(:,baselineidx(1):baselineidx(2),:)).^2,2),3);
-            pow(ch,:,:,:) = 100 * bsxfun(@rdivide, bsxfun(@minus,abs(tf(:,1:dsfac:end,:)).^2,base), base);
-            
-            % pre_stim_pow(ch,:,:,:) = 100 * bsxfun(@rdivide, bsxfun(@minus,pow, base), base);
-            phase(ch,:,:,:) = angle(tf(:,1:dsfac:end,:));
-            comp(ch,:,:,:) = tf(:,1:dsfac:end,:);
-        else
-        	base = mean(abs(tf(:,baselineidx(1):baselineidx(2))).^2,2);
-            pow(ch,:,:) = 100 * bsxfun(@rdivide, bsxfun(@minus,abs(tf(:,1:dsfac:end)).^2,base), base);
-            phase(ch,:,:) = angle(tf(:,1:dsfac:end));
-            comp(ch,:,:) = tf(:,1:dsfac:end);
-        end
+        %continue    
     end
+%     elseif length(size(timeseries)) == 2 && isempty(baseline)
+%         pow(ch,:,:) = abs(tf(:,1:dsfac:end)).^2;
+%         phase(ch,:,:) = angle(tf(:,1:dsfac:end));
+%         comp(ch,:,:) = tf(:,1:dsfac:end);
+%         %continue
+%     else
+%         % percent signal change baseline using all data in timevec (i.e., possibly all conditions)
+%         baselineidx = [];
+%         baselineidx(1)=dsearchn(timevec',baseline(1));
+%         baselineidx(2)=dsearchn(timevec',baseline(2));
+%         if length(size(timeseries))==3
+%             base = mean(mean(abs(tf(:,baselineidx(1):baselineidx(2),:)).^2,2),3);
+%             pow(ch,:,:,:) = 100 * bsxfun(@rdivide, bsxfun(@minus,abs(tf(:,1:dsfac:end,:)).^2,base), base);
+%             
+%             % pre_stim_pow(ch,:,:,:) = 100 * bsxfun(@rdivide, bsxfun(@minus,pow, base), base);
+%             phase(ch,:,:,:) = angle(tf(:,1:dsfac:end,:));
+%             comp(ch,:,:,:) = tf(:,1:dsfac:end,:);
+%         else
+%         	base = mean(abs(tf(:,baselineidx(1):baselineidx(2))).^2,2);
+%             pow(ch,:,:) = 100 * bsxfun(@rdivide, bsxfun(@minus,abs(tf(:,1:dsfac:end)).^2,base), base);
+%             phase(ch,:,:) = angle(tf(:,1:dsfac:end));
+%             comp(ch,:,:) = tf(:,1:dsfac:end);
+%         end
+
     
 end
 
